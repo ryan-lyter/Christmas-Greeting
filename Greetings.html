@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>System.Greeting::Execute()</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    :root {
+      --glass: rgba(20, 20, 30, 0.6);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      --neon-blue: #00f3ff;
+      --neon-purple: #bc13fe;
+      --neon-green: #0aff68;
+      --neon-red: #ff0055;
+      --neon-gold: #ffd700;
+      --kwd: #ff79c6;
+      --func: #8be9fd;
+      --str: #f1fa8c;
+      --type: #bd93f9;
+      --inc: #50fa7b;
+      --cmt: #6272a4; 
+      --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --font-code: "JetBrains Mono", "Fira Code", Consolas, monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html {
+      scroll-behavior: smooth;
+      scroll-snap-type: y mandatory;
+      width: 100%; height: 100%;
+    }
+
+    body {
+      margin: 0; padding: 0;
+      background: transparent; 
+      font-family: var(--font-ui);
+      color: #fff;
+      overflow-x: hidden; 
+      width: 100%; 
+    }
+
+    body.locked { overflow: hidden; height: 100vh; }
+
+    .layer-bg { position: fixed; inset: 0; pointer-events: none; }
+    .layer-ui { z-index: 10; position: relative; }
+    .layer-overlay { z-index: 100; position: fixed; inset: 0; pointer-events: none; }
+
+    .bg-base {
+      z-index: -3;
+      background: radial-gradient(circle at 50% 120%, #1a103c, #000);
+      background-color: #050505;
+    }
+
+    .aurora {
+      z-index: -2;
+      background: 
+        radial-gradient(circle at 0% 0%, rgba(188, 19, 254, 0.2), transparent 50%),
+        radial-gradient(circle at 100% 0%, rgba(0, 243, 255, 0.2), transparent 50%);
+      filter: blur(60px);
+      animation: shiftAurora 20s ease-in-out infinite alternate;
+      opacity: 0.8;
+    }
+    @keyframes shiftAurora { from { opacity: 0.6; transform: scale(1); } to { opacity: 1; transform: scale(1.1); } }
+
+    .stars {
+      z-index: -1;
+      background-image: 
+        radial-gradient(2px 2px at 20px 30px, #fff, transparent),
+        radial-gradient(2px 2px at 40px 70px, rgba(255,255,255,1), transparent),
+        radial-gradient(1px 1px at 90px 40px, #fff, transparent),
+        radial-gradient(2px 2px at 150px 150px, rgba(255,255,255,0.9), transparent);
+      background-size: 550px 550px;
+      animation: starMove 120s linear infinite;
+    }
+    @keyframes starMove { from { transform: translateY(0); } to { transform: translateY(-550px); } }
+
+    .crt-overlay {
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+      background-size: 100% 3px, 3px 100%;
+    }
+    .vignette {
+      background: radial-gradient(circle at center, transparent 50%, #000 100%);
+      opacity: 0.6;
+    }
+
+    .particle {
+      position: absolute;
+      color: var(--neon-green);
+      font-family: var(--font-code);
+      font-size: 14px;
+      font-weight: bold;
+      pointer-events: none;
+      text-shadow: 0 0 5px var(--neon-green);
+      animation: physics 1s forwards cubic-bezier(0.19, 1, 0.22, 1);
+      z-index: 50;
+    }
+    @keyframes physics {
+      0% { transform: translate(0, 0) scale(1) rotate(0deg); opacity: 1; }
+      100% { transform: translate(var(--tx), var(--ty)) scale(0) rotate(720deg); opacity: 0; }
+    }
+
+    section {
+      height: 100vh;
+      width: 100%;
+      scroll-snap-align: start;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      perspective: 1000px;
+    }
+
+    h1 {
+      font-size: clamp(3rem, 8vw, 6rem);
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: -3px;
+      color: #fff;
+      text-shadow: 0 0 30px rgba(0, 243, 255, 0.5);
+      margin-bottom: 50px;
+      transition: all 0.5s ease;
+      position: relative;
+    }
+    h1::after {
+      content: "Festive Greetings";
+      position: absolute; left: 0; top: 0; width: 100%; color: var(--neon-red); opacity: 0.5;
+      transform: translate(-2px, 0); mix-blend-mode: multiply; animation: glitch 2s infinite; pointer-events: none;
+    }
+    @keyframes glitch { 0%, 100% { clip-path: inset(0 0 0 0); } 20% { clip-path: inset(10% 0 60% 0); transform: translate(-2px, 2px); } 40% { clip-path: inset(80% 0 5% 0); transform: translate(2px, -2px); } }
+
+    .gift-wrap {
+      width: 160px; height: 160px;
+      position: relative;
+      cursor: pointer;
+      transition: all 0.4s ease;
+      z-index: 20;
+      animation: hoverFloat 3s ease-in-out infinite;
+    }
+    @keyframes hoverFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+    
+    .gift-wrap:hover { transform: scale(1.1) rotate(5deg) !important; filter: drop-shadow(0 0 20px var(--neon-gold)); }
+    
+    .box {
+      width: 100%; height: 100%;
+      background: linear-gradient(135deg, #d00000, #780000);
+      border-radius: 12px;
+      box-shadow: 0 15px 40px rgba(0,0,0,0.5);
+      position: relative;
+    }
+    .ribbon-v { position: absolute; left: 65px; height: 100%; width: 30px; background: var(--neon-gold); box-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
+    .ribbon-h { position: absolute; top: 65px; width: 100%; height: 30px; background: var(--neon-gold); box-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
+    
+    .click-text {
+      margin-top: 40px;
+      font-family: var(--font-code);
+      font-size: 1rem;
+      color: var(--neon-blue);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      animation: pulse 1.5s infinite;
+      transition: opacity 0.5s;
+    }
+
+    .code-editor {
+      width: 90%; max-width: 750px;
+      background: var(--glass);
+      backdrop-filter: blur(15px);
+      -webkit-backdrop-filter: blur(15px);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      box-shadow: 0 30px 60px rgba(0,0,0,0.8);
+      transform-style: preserve-3d;
+      opacity: 0;
+      transform: translateY(50px) rotateX(10deg);
+      display: none;
+      overflow: hidden;
+    }
+    .code-editor.active { display: block; animation: slideUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+    @keyframes slideUp { to { opacity: 1; transform: translateY(0) rotateX(0); } }
+
+    .toolbar {
+      background: rgba(0,0,0,0.4);
+      padding: 10px 20px;
+      display: flex; align-items: center;
+      border-bottom: 1px solid var(--glass-border);
+    }
+    .lights { display: flex; gap: 8px; margin-right: 15px; }
+    .dot { width: 12px; height: 12px; border-radius: 50%; }
+    .r { background: #ff5f56; } .y { background: #ffbd2e; } .g { background: #27c93f; }
+    .tab { font-family: var(--font-code); font-size: 0.8rem; color: #aaa; opacity: 0.8; }
+
+    .code-content {
+      padding: 30px;
+      font-family: var(--font-code);
+      font-size: 1rem;
+      line-height: 1.6;
+      text-align: left;
+    }
+    
+    .k { color: var(--kwd); font-weight: bold; }
+    .t { color: var(--type); }
+    .s { color: var(--str); }
+    .f { color: var(--func); }
+    .i { color: var(--inc); }
+    .c { color: var(--cmt); font-style: italic; }
+    
+    .cursor {
+      display: inline-block; width: 10px; height: 1.2em;
+      background: var(--neon-green);
+      vertical-align: sub;
+      animation: blink 1s steps(2) infinite;
+    }
+
+    .scroll-indicator {
+      position: absolute; bottom: 30px;
+      text-align: center; opacity: 0; transition: opacity 1s; pointer-events: none;
+    }
+    .scroll-indicator.visible { opacity: 1; animation: bounce 2s infinite; }
+    .scroll-indicator span { 
+      display: block; font-family: var(--font-code); font-size: 0.8rem; 
+      color: #888; letter-spacing: 2px; margin-bottom: 5px; 
+    }
+    .arrow { color: var(--neon-blue); font-size: 1.5rem; }
+
+    .social-stack {
+      display: flex; flex-direction: column; gap: 15px; width: 100%; max-width: 550px;
+      opacity: 0; transform: translateY(30px); transition: 0.8s ease;
+    }
+    .social-stack.show { opacity: 1; transform: translateY(0); }
+
+    .social-card {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--glass-border);
+      padding: 25px 30px;
+      border-radius: 12px;
+      display: flex; justify-content: space-between; align-items: center;
+      text-decoration: none; transition: 0.3s;
+      position: relative; overflow: hidden;
+    }
+    .social-card::before {
+      content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 100%; transition: 0.3s;
+    }
+
+    .social-card.discord:hover { border-color: #5865F2; background: rgba(88, 101, 242, 0.1); }
+    .social-card.discord::before { background: #5865F2; }
+    .social-card.discord .handle { color: #5865F2; }
+
+    .social-card.insta:hover { border-color: #E1306C; background: rgba(225, 48, 108, 0.1); }
+    .social-card.insta::before { background: linear-gradient(to bottom, #833AB4, #FD1D1D, #FCAF45); }
+    .social-card.insta .handle { color: #FCAF45; }
+
+    .social-card.email:hover { border-color: var(--neon-green); background: rgba(10, 255, 104, 0.1); }
+    .social-card.email::before { background: var(--neon-green); }
+    .social-card.email .handle { color: var(--neon-green); }
+
+    .social-card:hover::before { width: 8px; box-shadow: 0 0 20px currentColor; }
+    
+    .plat { color: #888; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; }
+    .handle { font-family: var(--font-code); font-weight: bold; transition: 0.3s; color: #fff; }
+
+    @keyframes pulse { 50% { opacity: 0.5; } }
+    @keyframes bounce { 
+      0%, 20%, 50%, 80%, 100% { transform: translateY(0); } 
+      40% { transform: translateY(-10px); } 60% { transform: translateY(-5px); } 
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+
+  </style>
+</head>
+<body class="locked">
+
+  <div class="layer-bg bg-base"></div>
+  <div class="layer-bg aurora"></div>
+  <div class="layer-bg stars"></div>
+  
+  <div class="layer-overlay crt-overlay"></div>
+  <div class="layer-overlay vignette"></div>
+
+  <section id="s1" class="layer-ui">
+    <div style="position: relative; text-align: center; width: 100%;">
+      <h1 id="title">Happy Holidays</h1>
+      
+      <div style="display: inline-block; position: relative;">
+        <div class="gift-wrap" id="gift">
+          <div class="box">
+            <div class="ribbon-v"></div>
+            <div class="ribbon-h"></div>
+          </div>
+        </div>
+        <div class="click-text" id="clickHint">Click to Initialize</div>
+      </div>
+
+      <div class="code-editor" id="win1" style="margin: 0 auto; margin-top: -140px;">
+        <div class="toolbar">
+          <div class="lights"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+          <div class="tab">status.cpp</div>
+        </div>
+        <div class="code-content">
+          <span class="i">#include &lt;iostream&gt;</span><br><br>
+          <span class="c">// System Status: Online</span><br>
+          <span class="k">void</span> <span class="f">broadcast</span>() {<br>
+          &nbsp;&nbsp;<span class="k">std</span>::<span class="k">cout</span> << <span class="s">"</span><span id="txt1"></span><span class="s">"</span><span class="cursor"></span> << <span class="k">std</span>::<span class="k">endl</span>;<br>
+          }
+        </div>
+      </div>
+    </div>
+
+    <div class="scroll-indicator" id="p1">
+      <span>CONTINUE</span>
+      <div class="arrow">↓</div>
+    </div>
+  </section>
+
+  <section id="s2" class="layer-ui">
+    <div class="code-editor" id="win2">
+      <div class="toolbar">
+        <div class="lights"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+        <div class="tab">main.cpp</div>
+      </div>
+      <div class="code-content">
+        <span class="i">#include &lt;iostream&gt;</span><br>
+        <span class="i">#include &lt;string&gt;</span><br><br>
+        <span class="k">int</span> <span class="f">main</span>() {<br>
+        &nbsp;&nbsp;<span class="c">// Wishing you a bug-free year ahead...</span><br>
+        &nbsp;&nbsp;<span class="k">std</span>::<span class="t">string</span> msg = <span class="s">"</span><span id="txt2"></span><span class="s">"</span><span class="cursor"></span>;<br>
+        <br>
+        &nbsp;&nbsp;<span class="k">std</span>::<span class="k">cout</span> << msg << <span class="k">std</span>::<span class="k">endl</span>;<br>
+        &nbsp;&nbsp;<span class="k">return</span> <span class="t">0</span>;<br>
+        }
+      </div>
+    </div>
+
+    <div class="scroll-indicator" id="p2">
+      <span>CONNECT</span>
+      <div class="arrow">↓</div>
+    </div>
+  </section>
+
+  <section id="s3" class="layer-ui">
+    <div class="social-stack reveal">
+      <h2 style="text-align: center; margin-bottom: 30px; font-family: var(--font-code); font-size: 1.5rem; color: var(--neon-purple);">
+        &lt;Contact_Info /&gt;
+      </h2>
+
+      <div class="social-card discord">
+        <span class="plat">Discord</span>
+        <span class="handle">.rixx_.</span>
+      </div>
+
+      <a href="https://instagram.com/ryg_n.x" target="_blank" class="social-card insta">
+        <span class="plat">Instagram</span>
+        <span class="handle">@ryg_n.x</span>
+      </a>
+
+      <a href="mailto:ry.studio.co@gmail.com" class="social-card email">
+        <span class="plat">Email</span>
+        <span class="handle">ry.studio.co@gmail.com</span>
+      </a>
+      
+      <div style="text-align: center; margin-top: 40px; opacity: 0.5; font-family: var(--font-code); font-size: 0.8rem;">
+        Process finished with exit code 0
+      </div>
+    </div>
+  </section>
+
+  <script>
+    const shorts = ["Merry Christmas!", "Happy Holidays!", "Season's Greetings!", "Peace,Love", "Comfort and Joy"];
+    const longMsg = "Wishing you a Christmas filled with laughter that echoes, memories that sparkle, and the simple, filling joy of good company. May the spirit of the season bring you peace and remind you how truly special you are. Sending all my love!";
+    
+    const gift = document.getElementById('gift');
+    const hint = document.getElementById('clickHint');
+    const title = document.getElementById('title');
+    
+    let audioCtx;
+    let noteIndex = 0;
+    let nextNoteTime = 0;
+    let playCount = 0;
+    let isPlaying = false;
+    let timerID;
+
+    const melody = [
+      {f:329.6,d:0.25}, {f:329.6,d:0.25}, {f:329.6,d:0.5},
+      {f:329.6,d:0.25}, {f:329.6,d:0.25}, {f:329.6,d:0.5},
+      {f:329.6,d:0.25}, {f:392.0,d:0.25}, {f:261.6,d:0.38}, {f:293.7,d:0.12}, {f:329.6,d:1.0},
+      {f:349.2,d:0.25}, {f:349.2,d:0.25}, {f:349.2,d:0.25}, {f:349.2,d:0.25},
+      {f:349.2,d:0.25}, {f:329.6,d:0.25}, {f:329.6,d:0.25}, {f:329.6,d:0.125}, {f:329.6,d:0.125},
+      {f:329.6,d:0.25}, {f:293.7,d:0.25}, {f:293.7,d:0.25}, {f:329.6,d:0.25}, {f:293.7,d:0.5}, {f:392.0,d:0.5}
+    ];
+
+    function initAudio() {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      audioCtx = new AudioContext();
+      nextNoteTime = audioCtx.currentTime + 0.1;
+      isPlaying = true;
+      playCount = 0;
+      scheduler();
+    }
+
+    function scheduler() {
+      if(!isPlaying) return;
+      const lookahead = 25.0; 
+      const scheduleAheadTime = 0.1;
+
+      timerID = setTimeout(function() {
+        if(!isPlaying) return;
+        
+        while (nextNoteTime < audioCtx.currentTime + scheduleAheadTime) {
+          if (noteIndex >= melody.length) {
+            noteIndex = 0;
+            playCount++;
+            if (playCount >= 2) {
+              isPlaying = false;
+              return;
+            }
+          }
+          const note = melody[noteIndex];
+          playTone(note.f, nextNoteTime, note.d * 0.9);
+          nextNoteTime += note.d * 1.1; 
+          noteIndex++;
+        }
+        scheduler();
+      }, lookahead);
+    }
+
+    function playTone(freq, t, dur) {
+      if(!audioCtx) return;
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      o.frequency.value = freq;
+      o.type = 'triangle'; 
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.15, t + 0.05); 
+      g.gain.exponentialRampToValueAtTime(0.001, t + dur); 
+      o.connect(g); g.connect(audioCtx.destination);
+      o.start(t); o.stop(t + dur);
+    }
+
+    function explode(x, y) {
+      const colors = ['#00f3ff', '#0aff68', '#bc13fe', '#fff'];
+      for(let i=0; i<60; i++) {
+        const p = document.createElement('div');
+        p.classList.add('particle');
+        p.innerText = Math.random() > 0.5 ? '1' : '0';
+        p.style.left = x + 'px';
+        p.style.top = y + 'px';
+        p.style.color = colors[Math.floor(Math.random()*colors.length)];
+        const angle = Math.random() * Math.PI * 2;
+        const velocity = Math.random() * 300 + 50;
+        p.style.setProperty('--tx', Math.cos(angle) * velocity + 'px');
+        p.style.setProperty('--ty', Math.sin(angle) * velocity + 200 + 'px'); 
+        document.body.appendChild(p);
+        setTimeout(() => p.remove(), 1000);
+      }
+    }
+
+    function type(txt, id, speed, cb) {
+      const el = document.getElementById(id);
+      let i=0;
+      function step() {
+        if(i < txt.length) {
+          el.innerText += txt.charAt(i);
+          i++;
+          setTimeout(step, speed);
+        } else if(cb) cb();
+      }
+      step();
+    }
+
+    gift.addEventListener('click', (e) => {
+      document.body.classList.remove('locked');
+      initAudio();
+      const rect = gift.getBoundingClientRect();
+      explode(rect.left + rect.width/2, rect.top + rect.height/2);
+
+      gift.style.transform = "scale(0)";
+      gift.style.opacity = "0";
+      hint.style.opacity = "0";
+      title.style.opacity = "0"; 
+
+      setTimeout(() => {
+        gift.style.display = 'none';
+        hint.style.display = 'none';
+        title.style.display = 'none';
+        
+        const win1 = document.getElementById('win1');
+        win1.classList.add('active');
+        
+        const msg = shorts[Math.floor(Math.random()*shorts.length)];
+        setTimeout(() => {
+          type(msg, 'txt1', 50, () => {
+             document.getElementById('p1').classList.add('visible');
+          });
+        }, 600);
+      }, 300);
+    });
+
+    const obs2 = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if(e.isIntersecting && !e.target.classList.contains('seen')) {
+          e.target.classList.add('seen');
+          const win2 = document.getElementById('win2');
+          win2.classList.add('active');
+          
+          setTimeout(() => {
+            type(longMsg, 'txt2', 30, () => {
+              setTimeout(() => {
+                document.getElementById('p2').classList.add('visible');
+              }, 5000); 
+            });
+          }, 800);
+        }
+      });
+    }, {threshold:0.5});
+    obs2.observe(document.getElementById('s2'));
+
+    const obs3 = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if(e.isIntersecting) {
+          e.target.querySelector('.reveal').classList.add('show');
+        }
+      });
+    }, {threshold:0.5});
+    obs3.observe(document.getElementById('s3'));
+  </script>
+</body>
+</html>
